@@ -17,6 +17,21 @@ std::vector<std::pair<int, float>> gen() {
 }
 
 namespace detail {
+std::tuple<std::vector<float>, std::vector<int>>
+reference(std::vector<std::pair<int, float>> const input) {
+  std::vector<float> floats;
+  std::vector<int> ints;
+  floats.reserve(input.size());
+  ints.reserve(input.size());
+
+  for (auto pair : input) {
+    floats.push_back(pair.second);
+    ints.push_back(pair.first);
+  }
+
+  return {floats, ints};
+}
+
 std::tuple<boost::container::small_vector<float, 45>,
            boost::container::small_vector<int, 45>,
            boost::container::small_vector<float, 45>,
@@ -114,6 +129,12 @@ static void reserve_main(benchmark::State &state) {
     benchmark::DoNotOptimize(detail::reserve(store));
   }
 }
+static void reference_main(benchmark::State &state) {
+  auto store = gen();
+  for (auto _ : state) {
+    benchmark::DoNotOptimize(detail::reference(store));
+  }
+}
 
 auto compute_min = [](const std::vector<double> &v) -> double {
   return *(std::min_element(std::begin(v), std::end(v)));
@@ -128,6 +149,10 @@ BENCHMARK(smart_main)
     ->UseRealTime()
     ->ThreadRange(1, 4);
 BENCHMARK(reserve_main)
+    ->ComputeStatistics("min", compute_min)
+    ->UseRealTime()
+    ->ThreadRange(1, 4);
+BENCHMARK(reference_main)
     ->ComputeStatistics("min", compute_min)
     ->UseRealTime()
     ->ThreadRange(1, 4);
